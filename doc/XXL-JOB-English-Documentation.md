@@ -818,22 +818,29 @@ Source repository address | Release Download
 
 ### 1.5 Environment
 - JDK：1.8+
-- Mysql：5.7+
+- PostgreSQL：17+
 - Maven：3+
 
 
 ## 2. Quick Start
 
 ### 2.1 Init database
-Please download project source code，get db scripts and execute, it will generate 16 tables if succeed.
+This branch uses PostgreSQL. Create a UTF-8 database, then initialize its eight tables:
+
+```bash
+createdb -h 127.0.0.1 -U postgres -E UTF8 xxl_job
+psql -h 127.0.0.1 -U postgres -d xxl_job -v ON_ERROR_STOP=1 -f doc/db/tables_xxl_job.sql
+```
+
+Existing MySQL data must be migrated separately. Use an admin image built from this branch for Docker deployments; see the repository README.
 
 The relative path of db scripts is as follows:
 
     /xxl-job/doc/db/tables_xxl_job.sql
 
-The xxl-job-admin can be deployed as a cluster,all nodes of the cluster must connect to the same mysql instance.
+The xxl-job-admin can be deployed as a cluster,all nodes of the cluster must connect to the same PostgreSQL instance.
 
-If mysql instances is deployed in master-slave mode,all nodes of the cluster must connect to master instace.
+If PostgreSQL instances is deployed in master-slave mode,all nodes of the cluster must connect to master instace.
 
 ### 2.2 Compile
 Source code is organized by maven,unzip it and structure is as follows:
@@ -860,10 +867,10 @@ The concrete contet describe as follows:
 
 ```
 ### JDBC connection info of schedule center：keep Consistent with chapter 2.1
-spring.datasource.url=jdbc:mysql://127.0.0.1:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
-spring.datasource.username=root
-spring.datasource.password=root_pwd
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.url=jdbc:postgresql://127.0.0.1:5432/xxl_job
+spring.datasource.username=postgres
+spring.datasource.password=postgres_pwd
+spring.datasource.driver-class-name=org.postgresql.Driver
 
 ### Alarm mailbox
 spring.mail.host=smtp.qq.com
@@ -1210,9 +1217,7 @@ Click the delete button on the right side of the task,the task will be deteted.
     - /xxl-job-executor-samples :executor，Demo project（you can develop on this demo project or adjust your own exist project to executor project)
 
 ### 5.2 configure database
-XXL-JOB schedule module is implemented based on Quartz cluster,it’s “database” is extended based on Quartz’s 11 mysql tables.
-
-XXL-JOB custom Quartz table structure prefix(XXL_JOB_QRTZ_).
+The scheduling database uses PostgreSQL and contains eight tables defined in `doc/db/tables_xxl_job.sql`.
 
 ![输入图片说明](https://www.xuxueli.com/project/static/xxl-job/images/img_bNwm.png "在这里输入图片标题")
 
@@ -1259,7 +1264,7 @@ Under Quartz develop,task logic often was maintained by QuartzJobBean, couple is
 This call module is like RPC,RemoteHttpJobBean provide call proxy functionality,the executor is provided as remote service.
 
 #### 5.4.3 Schedule Center HA（Cluster）
-It is based on Quartz cluster，databse use Mysql；while QUARTZ task schedule is used in Clustered Distributed Concurrent Environment,all nodes will report task info and store into database.it will fetch trigger from database while execute task,if trigger name and execute time is the same only one node will execute the task.
+The scheduling center uses a PostgreSQL row lock in `xxl_job_lock` to coordinate scheduling across cluster nodes. All nodes must connect to the same primary database.
 
 ```
 # for cluster
@@ -1674,14 +1679,18 @@ Tips: V1.3.x release has been published , enter the maintenance phase, branch  a
     <summary>Docker Compose startup steps：</summary>    
 
     ```
-    // Download XXL-JOB
-    git clone --branch "$(curl -s https://api.github.com/repos/xuxueli/xxl-job/releases/latest | jq -r .tag_name)" https://github.com/xuxueli/xxl-job.git
+    // Download this PostgreSQL branch and enter the repository
+    git clone https://github.com/octer-ai/xxl-job-pg.git
+    cd xxl-job-pg
     // Build XXL-JOB
     mvn clean package -Dmaven.test.skip=true
-    // Start XXL-JOB
-    MYSQL_PATH={自定义数据库持久化目录} docker compose up -d
+    // Configure PARAMS with a PostgreSQL address reachable from the container;
+    // deploy and initialize the database separately.
+    cat docker/docker-compose.admin.yml
+    // Start XXL-JOB admin
+    docker compose -f docker/docker-compose.admin.yml up -d --build
     // Stop XXL-JOB
-    docker compose down
+    docker compose -f docker/docker-compose.admin.yml down
     ```
 </details>
 

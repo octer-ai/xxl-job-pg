@@ -862,13 +862,20 @@ XXL-JOB是一个分布式任务调度平台，其核心设计目标是开发迅�
 ### 1.6 环境
 - Maven：3+
 - Jdk：17+ (说明：版本3.x及以上要求Jdk17+；版本2.x及以下支持Jdk1.8)
-- Mysql：8.0+
+- PostgreSQL：17+
 
 
 ## 二、快速入门
 
 ### 2.1 初始化“调度数据库”
-请下载项目源码并解压，获取 "调度数据库初始化SQL脚本" 并执行即可。
+本分支使用 PostgreSQL。先创建数据库，再将 "调度数据库初始化SQL脚本" 导入目标数据库：
+
+```bash
+createdb -h 127.0.0.1 -U postgres -E UTF8 xxl_job
+psql -h 127.0.0.1 -U postgres -d xxl_job -v ON_ERROR_STOP=1 -f doc/db/tables_xxl_job.sql
+```
+
+已有 MySQL 数据需另行迁移；初始化脚本仅用于新数据库。Docker 部署须使用本分支构建的镜像，详见仓库 README。
 
 "调度数据库初始化SQL脚本" 位置为:
 
@@ -876,9 +883,9 @@ XXL-JOB是一个分布式任务调度平台，其核心设计目标是开发迅�
 /xxl-job/doc/db/tables_xxl_job.sql
 ```
 
-调度中心支持集群部署，集群情况下各节点务必连接同一个mysql实例;
+调度中心支持集群部署，集群情况下各节点务必连接同一个PostgreSQL实例;
 
-如果mysql做主从,调度中心集群节点务必强制走主库;
+如果PostgreSQL做主从,调度中心集群节点务必强制走主库;
 
 ### 2.2 编译源码
 解压源码,按照maven格式将源码导入IDE, 使用maven进行编译即可，源码结构如下：
@@ -909,10 +916,10 @@ xxl-job-executor-samples：执行器Sample示例（选择合适的版本执行�
 
 ```
 ### 调度中心JDBC链接：链接地址请保持和 2.1章节 所创建的调度数据库的地址一致
-spring.datasource.url=jdbc:mysql://127.0.0.1:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai
-spring.datasource.username=root
-spring.datasource.password=root_pwd
-spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.url=jdbc:postgresql://127.0.0.1:5432/xxl_job
+spring.datasource.username=postgres
+spring.datasource.password=postgres_pwd
+spring.datasource.driver-class-name=org.postgresql.Driver
 
 ### 报警邮箱
 spring.mail.host=smtp.qq.com
@@ -968,31 +975,32 @@ xxl.job.logretentiondays=30
 
 #### 其他：Docker 镜像方式搭建调度中心：
 
-- 下载镜像
+- 从本分支构建镜像
 
 ```
 /**
-* Docker地址：https://hub.docker.com/r/xuxueli/xxl-job-admin/     
-* 建议指定版本号拉取镜像；
+* 在仓库根目录执行，构建包含 PostgreSQL 支持的镜像；
 */ 
-docker pull xuxueli/xxl-job-admin:{指定版本}
+mvn clean package -Dmaven.test.skip=true
+docker build -t xuxueli/xxl-job-admin:local ./xxl-job-admin
 ```
 
 - 创建容器并运行
 
 ```
 /**
-* 如需自定义 “项目配置文件” 中配置项，比如 mysql 配置，可通过 "-e PARAMS" 指定，参数格式: -e PARAMS="--key=value --key2=value2"；
+* 如需自定义 “项目配置文件” 中配置项，比如 PostgreSQL 配置，可通过 "-e PARAMS" 指定，参数格式: -e PARAMS="--key=value --key2=value2"；
 * （配置项参考文件：/xxl-job/xxl-job-admin/src/main/resources/application.properties）
 * 如需自定义 “JVM内存参数”，可通过 "-e JAVA_OPTS" 指定，参数格式: -e JAVA_OPTS="-Xmx512m"
 * 如需自定义 “日志文件目录”，可通过 "-e LOG_HOME" 指定，参数格式: -e LOG_HOME=/data/applogs
 */
 docker run -d \
--e PARAMS="--spring.datasource.url=jdbc:mysql://127.0.0.1:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai" \
+--add-host=host.docker.internal:host-gateway \
+-e PARAMS="--spring.datasource.url=jdbc:postgresql://host.docker.internal:5432/xxl_job" \
 -p 8080:8080 \
 -v /tmp:/data/applogs \
 --name xxl-job-admin \
-xuxueli/xxl-job-admin:{指定版本}
+xuxueli/xxl-job-admin:local
 ```
 
 
@@ -1582,7 +1590,7 @@ XXL-JOB最终选择自研调度组件（早期调度组件基于Quartz）；一�
 XXL-JOB中“调度模块”和“任务模块”完全解耦，调度模块进行任务调度时，将会解析不同的任务参数发起远程调用，调用各自的远程执行器服务。这种调用模型类似RPC调用，调度中心提供调用代理的功能，而执行器提供远程服务的功能。
 
 #### 5.4.3 调度中心HA（集群）
-基于数据库的集群方案，数据库选用Mysql；集群分布式并发环境中进行定时任务调度时，会在各个节点上报任务，存到数据库中，执行时会从数据库中取出触发器来执行，如果触发器的名称和执行时间相同，则只有一个节点去执行此任务。
+基于数据库的集群方案，数据库选用PostgreSQL；集群分布式并发环境中进行定时任务调度时，会在各个节点上报任务，存到数据库中，执行时会从数据库中取出触发器来执行，如果触发器的名称和执行时间相同，则只有一个节点去执行此任务。
 
 #### 5.4.4 调度线程池
 调度采用线程池方式实现，避免单线程因阻塞而引起任务调度延迟。
@@ -1838,13 +1846,14 @@ mvn clean package
 docker build -t xuxueli/xxl-job-admin:{指定版本} ./xxl-job-admin
 
 /**
-* 如需自定义 “项目配置文件” 中配置项，比如 mysql 配置，可通过 "-e PARAMS" 指定，参数格式: -e PARAMS="--key=value --key2=value2"；
+* 如需自定义 “项目配置文件” 中配置项，比如 PostgreSQL 配置，可通过 "-e PARAMS" 指定，参数格式: -e PARAMS="--key=value --key2=value2"；
 * （配置项参考文件：/xxl-job/xxl-job-admin/src/main/resources/application.properties）
 * 如需自定义 “JVM内存参数”，可通过 "-e JAVA_OPTS" 指定，参数格式: -e JAVA_OPTS="-Xmx512m"
 * 如需自定义 “日志文件目录”，可通过 "-e LOG_HOME" 指定，参数格式: -e LOG_HOME=/data/applogs
 */
 docker run -d \
--e PARAMS="--spring.datasource.url=jdbc:mysql://127.0.0.1:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&serverTimezone=Asia/Shanghai" \
+--add-host=host.docker.internal:host-gateway \
+-e PARAMS="--spring.datasource.url=jdbc:postgresql://host.docker.internal:5432/xxl_job" \
 -p 8080:8080 \
 -v /tmp:/data/applogs \
 --name xxl-job-admin \
@@ -1870,13 +1879,11 @@ XXL-JOB日志主要包含如下两部分，均支持日志自动清理，说明�
 针对该问题，调度中心提供内置组件进行处理，逻辑为：调度记录停留在 "运行中" 状态超过10min，且对应执行器心跳注册失败不在线，则将本地调度主动标记失败；
 
 ### 5.24 Docker Compose 快速部署    
-支持通过 Docker Compose 方式部署并启动 XXL-JOB，包括：数据库、调度中心、示例执行器。
+本分支通过 `docker/docker-compose.admin.yml` 部署调度中心；PostgreSQL 数据库和执行器需单独部署。
 
-- 第一步：克隆 XXL-JOB    
+- 第一步：获取本分支源码
 
-```
-git clone --branch "$(curl -s https://api.github.com/repos/xuxueli/xxl-job/releases/latest | jq -r .tag_name)" https://github.com/xuxueli/xxl-job.git
-```
+使用包含 PostgreSQL 适配的本分支源码；上游 MySQL 版本不能直接使用下列配置。
 
 - 第二步：构建 XXL-JOB    
 
@@ -1888,19 +1895,18 @@ mvn clean package -Dmaven.test.skip=true
 - 第三步：配置 XXL-JOB    
 
 ```
-// 注意：前往docker目录，自定义 .env 配置；如修改 MYSQL_PATH 配置设置Mysql数据持久化目录；
-cd ./docker
-cat .env
+// 在仓库根目录修改 Compose 文件中的 PARAMS，设置容器可访问的数据库地址及账号密码；数据库需预先初始化。
+cat docker/docker-compose.admin.yml
 ```
 
 - 第四步：启动 XXL-JOB    
 
 ```
 // 启动 
-docker compose up -d
+docker compose -f docker/docker-compose.admin.yml up -d --build
 
 // 停止
-docker compose down
+docker compose -f docker/docker-compose.admin.yml down
 ```
 
 ### 5.25 优雅停机   
@@ -3011,17 +3017,17 @@ public void execute() {
     <summary>Docker Compose启动步骤：</summary>    
 
     ```
-    // 下载 XXL-JOB
-    git clone --branch "$(curl -s https://api.github.com/repos/xuxueli/xxl-job/releases/latest | jq -r .tag_name)" https://github.com/xuxueli/xxl-job.git
+    // 下载本 PostgreSQL 分支并进入仓库目录
+    git clone https://github.com/octer-ai/xxl-job-pg.git
+    cd xxl-job-pg
     // 构建 XXL-JOB
     mvn clean package -Dmaven.test.skip=true
-    // 配置 XXL-JOB（前往docker目录，自定义 .env）
-    cd ./docker
-    cat .env
+    // 配置数据库连接（数据库需单独部署并初始化）
+    cat docker/docker-compose.admin.yml
     // 启动 XXL-JOB
-    docker compose up -d
+    docker compose -f docker/docker-compose.admin.yml up -d --build
     // 停止 XXL-JOB
-    docker compose down
+    docker compose -f docker/docker-compose.admin.yml down
     ```
 </details>
 

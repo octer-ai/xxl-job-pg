@@ -1,0 +1,22 @@
+services:
+  xxl-job-admin:
+    image: xuxueli/xxl-job-admin:local
+    build:
+      context: ../xxl-job-admin
+      dockerfile: Dockerfile
+    container_name: xxl-job-admin
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      JAVA_OPTS: "-Duser.timezone=Asia/Shanghai"
+      LOG_HOME: /data/applogs
+      # PostgreSQL is provided separately; these values match the current deployment.
+      PARAMS: >-
+        --spring.datasource.url=jdbc:postgresql://host.docker.internal:2956/xxl_job
+        --spring.datasource.username=postgres
+        --spring.datasource.password=postgres_pwd
+        --spring.datasource.driver-class-name=org.postgresql.Driver
+        --server.port=8080
+        --server.servlet.context-path=/
+    ports:
+      - "2955:8080"

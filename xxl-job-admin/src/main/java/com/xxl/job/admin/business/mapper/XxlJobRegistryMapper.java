@@ -13,10 +13,10 @@ import java.util.List;
 @Mapper
 public interface XxlJobRegistryMapper {
 
-    public List<Integer> findDead(@Param("timeout") int timeout,
+    public List<Long> findDead(@Param("timeout") int timeout,
                                   @Param("nowTime") Date nowTime);
 
-    public int removeDead(@Param("ids") List<Integer> ids);
+    public int removeDead(@Param("ids") List<Long> ids);
 
     public List<XxlJobRegistry> findAll(@Param("timeout") int timeout,
                                         @Param("nowTime") Date nowTime);

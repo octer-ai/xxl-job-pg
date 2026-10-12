@@ -11,6 +11,21 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: xxl_job_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres_test_pwd
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d xxl_job_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -21,3 +36,12 @@ jobs:
           cache: maven
       - name: Build with Maven
         run: mvn -B package --file pom.xml
+      - name: Verify PostgreSQL mappers
+        env:
+          XXL_JOB_TEST_PG_URL: jdbc:postgresql://127.0.0.1:5432/xxl_job_test
+          XXL_JOB_TEST_PG_USER: postgres
+          XXL_JOB_TEST_PG_PASSWORD: postgres_test_pwd
+          LOG_HOME: ${{ runner.temp }}/xxl-job-logs
+        run: >-
+          mvn -B -pl xxl-job-admin -am -Dmaven.test.skip=false
+          -Dtest=PostgreSqlMapperTest -Dsurefire.failIfNoSpecifiedTests=false test

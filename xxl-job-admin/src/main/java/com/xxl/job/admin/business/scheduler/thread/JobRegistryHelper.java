@@ -77,7 +77,7 @@ public class JobRegistryHelper {
 				if (groupList!=null && !groupList.isEmpty()) {
 
 					// a、remove dead address (admin/executor)
-					List<Integer> ids = XxlJobAdminBootstrap.getInstance().getXxlJobRegistryMapper().findDead(Const.DEAD_TIMEOUT, new Date());
+					List<Long> ids = XxlJobAdminBootstrap.getInstance().getXxlJobRegistryMapper().findDead(Const.DEAD_TIMEOUT, new Date());
 					if (ids!=null && !ids.isEmpty()) {
 						XxlJobAdminBootstrap.getInstance().getXxlJobRegistryMapper().removeDead(ids);
 					}
@@ -174,9 +174,9 @@ public class JobRegistryHelper {
 		registryOrRemoveThreadPool.execute(new Runnable() {
 			@Override
 			public void run() {
-				// 0-fail; 1-save suc; 2-update suc;
+				// PostgreSQL upsert returns 1 for both inserts and updates.
 				int ret = XxlJobAdminBootstrap.getInstance().getXxlJobRegistryMapper().registrySaveOrUpdate(registryParam.getRegistryGroup(), registryParam.getRegistryKey(), registryParam.getRegistryValue(), new Date());
-				if (ret == 1) {
+				if (ret > 0) {
 					// fresh (add)
 					freshGroupRegistryInfo(registryParam);
 				}

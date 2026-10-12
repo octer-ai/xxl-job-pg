@@ -27,7 +27,7 @@ public class XxlJobRegistryMapperTest {
 
         List<XxlJobRegistry> list = xxlJobRegistryMapper.findAll(1, new Date());
 
-        int ret2 = xxlJobRegistryMapper.removeDead(Arrays.asList(1));
+        int ret2 = xxlJobRegistryMapper.removeDead(Arrays.asList(1L));
     }
 
     @Test

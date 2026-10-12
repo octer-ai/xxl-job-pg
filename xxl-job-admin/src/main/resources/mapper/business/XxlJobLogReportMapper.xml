@@ -20,39 +20,14 @@
 		t.fail_count,
 		t.update_time
 	</sql>
-	
-	<!--<insert id="save" parameterType="com.xxl.job.admin.business.model.XxlJobLogReport" useGeneratedKeys="true" keyProperty="id" >
-		INSERT INTO xxl_job_log_report (
-			`trigger_day`,
-			`running_count`,
-			`suc_count`,
-			`fail_count`
-		) VALUES (
-			#{triggerDay},
-			#{runningCount},
-			#{sucCount},
-			#{failCount}
-		);
-		&lt;!&ndash;<selectKey resultType="java.lang.Integer" order="AFTER" keyProperty="id">
-			SELECT LAST_INSERT_ID() 
-		</selectKey>&ndash;&gt;
-	</insert>
 
-	<update id="update" >
-        UPDATE xxl_job_log_report
-        SET `running_count` = #{runningCount},
-        	`suc_count` = #{sucCount},
-        	`fail_count` = #{failCount}
-        WHERE `trigger_day` = #{triggerDay}
-    </update>-->
-
-	<insert id="saveOrUpdate" parameterType="com.xxl.job.admin.business.model.XxlJobLogReport" useGeneratedKeys="true" keyProperty="id" >
+	<insert id="saveOrUpdate" parameterType="com.xxl.job.admin.business.model.XxlJobLogReport" useGeneratedKeys="true" keyProperty="id" keyColumn="id" >
 		INSERT INTO xxl_job_log_report (
-			`trigger_day`,
-			`running_count`,
-			`suc_count`,
-			`fail_count`,
-			`update_time`
+			trigger_day,
+			running_count,
+			suc_count,
+			fail_count,
+			update_time
 		) VALUES (
 			 #{triggerDay},
 			 #{runningCount},
@@ -60,11 +35,11 @@
 			 #{failCount},
 			 #{updateTime}
 		 )
-		ON DUPLICATE KEY UPDATE
-			`running_count` = #{runningCount},
-			`suc_count` = #{sucCount},
-			`fail_count` = #{failCount},
-			`update_time` = #{updateTime}
+		ON CONFLICT (trigger_day) DO UPDATE SET
+			running_count = EXCLUDED.running_count,
+			suc_count = EXCLUDED.suc_count,
+			fail_count = EXCLUDED.fail_count,
+			update_time = EXCLUDED.update_time
 	</insert>
 
 	<select id="queryLogReport" resultMap="XxlJobLogReport">

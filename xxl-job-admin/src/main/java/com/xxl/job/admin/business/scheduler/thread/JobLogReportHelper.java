@@ -80,7 +80,7 @@ public class JobLogReportHelper {
                     }
 
                     // do refresh:
-                    XxlJobAdminBootstrap.getInstance().getXxlJobLogReportMapper().saveOrUpdate(xxlJobLogReport);      // 0-fail; 1-save suc; 2-update suc;
+                    XxlJobAdminBootstrap.getInstance().getXxlJobLogReportMapper().saveOrUpdate(xxlJobLogReport);      // PostgreSQL upsert returns 1 for both inserts and updates.
                         /*if (ret < 1) {
                             XxlJobAdminBootstrap.getInstance().getXxlJobLogReportMapper().save(xxlJobLogReport);
                         }*/

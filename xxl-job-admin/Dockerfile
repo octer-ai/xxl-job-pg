@@ -8,11 +8,11 @@ MAINTAINER xuxueli
 ENV PARAMS=""
 
 # set timezone
-ENV TZ=PRC
+ENV TZ=Asia/Shanghai
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # copy jar
-ADD target/xxl-job-admin-*.jar /app.jar
+COPY target/xxl-job-admin.jar /app.jar
 
 # expose port
 EXPOSE 8080
@@ -21,4 +21,4 @@ EXPOSE 8080
 # log home: -e LOG_HOME=/data/applogs
 # jvm options: -e JAVA_OPTS="-Xms128m -Xmx128m"
 # app params: -e PARAMS="--server.port=8080"
-ENTRYPOINT ["sh","-c","java ${LOG_HOME:+-DLOG_HOME=$LOG_HOME} -jar $JAVA_OPTS /app.jar $PARAMS"]
+ENTRYPOINT ["sh","-c","exec java $JAVA_OPTS ${LOG_HOME:+-DLOG_HOME=$LOG_HOME} -jar /app.jar $PARAMS"]

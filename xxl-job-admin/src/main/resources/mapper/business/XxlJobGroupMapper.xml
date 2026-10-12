@@ -36,18 +36,18 @@
 		ORDER BY t.app_name, t.name, t.id ASC
 	</select>
 
-	<insert id="save" parameterType="com.xxl.job.admin.business.model.XxlJobGroup" useGeneratedKeys="true" keyProperty="id" >
-		INSERT INTO xxl_job_group ( `app_name`, `name`, `address_type`, `address_list`, `access_token`, `update_time`)
+	<insert id="save" parameterType="com.xxl.job.admin.business.model.XxlJobGroup" useGeneratedKeys="true" keyProperty="id" keyColumn="id" >
+		INSERT INTO xxl_job_group ( app_name, name, address_type, address_list, access_token, update_time)
 		values ( #{appname}, #{name}, #{addressType}, #{addressList}, #{accessToken}, #{updateTime} );
 	</insert>
 
 	<update id="update" parameterType="com.xxl.job.admin.business.model.XxlJobGroup" >
 		UPDATE xxl_job_group
-		SET `name` = #{name},
-			`address_type` = #{addressType},
-			`address_list` = #{addressList},
-			`access_token` = #{accessToken},
-			`update_time` = #{updateTime}
+		SET name = #{name},
+			address_type = #{addressType},
+			address_list = #{addressList},
+			access_token = #{accessToken},
+			update_time = #{updateTime}
 		WHERE id = #{id}
 	</update>
 
@@ -65,7 +65,7 @@
 	<select id="loadByAppname" parameterType="java.lang.String" resultMap="XxlJobGroup">
 		SELECT <include refid="Base_Column_List" />
 		FROM xxl_job_group AS t
-		WHERE t.app_name = #{appname}
+		WHERE LOWER(t.app_name) = LOWER(#{appname})
 	</select>
 
 	<select id="pageList" parameterType="java.util.HashMap" resultMap="XxlJobGroup">
@@ -73,14 +73,14 @@
 		FROM xxl_job_group AS t
 		<trim prefix="WHERE" prefixOverrides="AND | OR" >
 			<if test="appname != null and appname != ''">
-				AND t.app_name like CONCAT(CONCAT('%', #{appname}), '%')
+				AND t.app_name ILIKE CONCAT(CONCAT('%', #{appname}), '%')
 			</if>
 			<if test="name != null and name != ''">
-				AND t.name like CONCAT(CONCAT('%', #{name}), '%')
+				AND t.name ILIKE CONCAT(CONCAT('%', #{name}), '%')
 			</if>
 		</trim>
 		ORDER BY t.app_name, t.name, t.id ASC
-		LIMIT #{offset}, #{pagesize}
+		LIMIT #{pagesize} OFFSET #{offset}
 	</select>
 
 	<select id="pageListCount" parameterType="java.util.HashMap" resultType="int">
@@ -88,10 +88,10 @@
 		FROM xxl_job_group AS t
 		<trim prefix="WHERE" prefixOverrides="AND | OR" >
 			<if test="appname != null and appname != ''">
-				AND t.app_name like CONCAT(CONCAT('%', #{appname}), '%')
+				AND t.app_name ILIKE CONCAT(CONCAT('%', #{appname}), '%')
 			</if>
 			<if test="name != null and name != ''">
-				AND t.name like CONCAT(CONCAT('%', #{name}), '%')
+				AND t.name ILIKE CONCAT(CONCAT('%', #{name}), '%')
 			</if>
 		</trim>
 	</select>

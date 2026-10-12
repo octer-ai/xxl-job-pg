@@ -40,6 +40,41 @@ Now, it's already open source, and many companies use it in production environme
 XXL-JOB是一个分布式任务调度平台，其核心设计目标是开发迅速、学习简单、轻量级、易扩展。现已开放源代码并接入多家公司线上产品线，开箱即用。
 
 
+## PostgreSQL 部署
+
+本分支使用 PostgreSQL 17+。先创建 UTF-8 数据库，再导入初始化脚本：
+
+```bash
+createdb -h 127.0.0.1 -U postgres -E UTF8 xxl_job
+psql -h 127.0.0.1 -U postgres -d xxl_job -v ON_ERROR_STOP=1 -f doc/db/tables_xxl_job.sql
+```
+
+在 `xxl-job-admin/src/main/resources/application.properties` 中设置 PostgreSQL 的连接地址、用户名和密码；默认地址为 `jdbc:postgresql://127.0.0.1:5432/xxl_job`。
+
+调度中心的可执行包固定为 `xxl-job-admin/target/xxl-job-admin.jar`；两个 Spring Boot 示例执行器也使用不带版本号的可执行包名。Dockerfile 精确复制这些包，避免同时匹配源码包和 Javadoc 包。
+
+使用 Docker Compose 时，在仓库根目录运行 `mvn clean package -Dmaven.test.skip=true`，使用 `docker/docker-compose.admin.yml` 部署调度中心。调度中心须使用本分支构建的镜像，上游 MySQL 版镜像不能直接使用。
+
+此文件只定义 `xxl-job-admin` 服务，所有环境变量值均直接写在文件中，不依赖 `.env`，未配置卷挂载、自定义网络或主机映射。默认访问端口为 `2955`，数据库连接为 `host.docker.internal:2956` 上的 `xxl_job`（账号 `postgres`，密码 `postgres_pwd`）；部署前在 `PARAMS` 中将数据库地址改为容器可访问的 PostgreSQL IP 或域名。数据库需预先初始化，执行器需单独部署。
+
+```bash
+# 在仓库根目录执行；构建前需生成 xxl-job-admin/target/xxl-job-admin.jar
+docker compose -f docker/docker-compose.admin.yml up -d --build
+```
+
+已有 MySQL 数据需另行导入 PostgreSQL；此初始化脚本用于新数据库，不会迁移现有数据。导入含显式 ID 的数据后，在应用停止写入时执行 `doc/db/reset_identity_sequences.sql`，校准全部七张带自增 ID 的表（包括空表）。账号和 AppName 的唯一性及查询忽略大小写，后台文本搜索使用 `ILIKE`；其他文本比较采用 PostgreSQL 默认规则，Unicode 重音、排序及尾部空格行为与 MySQL 的 `utf8mb4_unicode_ci` 不完全等价。
+
+时间字段使用 `TIMESTAMP WITHOUT TIME ZONE`，保持原有 `DATETIME` 的本地时间语义。连接池将数据库会话时区设为 `Asia/Shanghai`；应用 JVM 和集群节点也应使用同一时区（例如 `JAVA_OPTS=-Duser.timezone=Asia/Shanghai`），避免时间值偏移。
+
+PostgreSQL 集成测试使用独立的临时 schema，并在结束时删除它；测试账号需要创建 schema 的权限：
+
+```bash
+XXL_JOB_TEST_PG_URL=jdbc:postgresql://127.0.0.1:5432/xxl_job \
+XXL_JOB_TEST_PG_USER=postgres XXL_JOB_TEST_PG_PASSWORD=postgres_pwd \
+mvn -pl xxl-job-admin -am -Dmaven.test.skip=false \
+    -Dtest=PostgreSqlMapperTest -Dsurefire.failIfNoSpecifiedTests=false test
+```
+
 ## Sponsor
 XXL-JOB is an open source and free project, with its ongoing development made possible entirely by the support of these awesome backers.
 
