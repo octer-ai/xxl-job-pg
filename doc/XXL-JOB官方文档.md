@@ -1879,7 +1879,7 @@ XXL-JOB日志主要包含如下两部分，均支持日志自动清理，说明�
 针对该问题，调度中心提供内置组件进行处理，逻辑为：调度记录停留在 "运行中" 状态超过10min，且对应执行器心跳注册失败不在线，则将本地调度主动标记失败；
 
 ### 5.24 Docker Compose 快速部署    
-本分支通过 `docker/docker-compose.admin.yml` 部署调度中心；PostgreSQL 数据库和执行器需单独部署。
+本分支通过 `docker/docker-compose.yml` 部署调度中心；PostgreSQL 数据库和执行器需单独部署。
 
 - 第一步：获取本分支源码
 
@@ -1896,17 +1896,17 @@ mvn clean package -Dmaven.test.skip=true
 
 ```
 // 在仓库根目录修改 Compose 文件中的 PARAMS，设置容器可访问的数据库地址及账号密码；数据库需预先初始化。
-cat docker/docker-compose.admin.yml
+cat docker/docker-compose.yml
 ```
 
 - 第四步：启动 XXL-JOB    
 
 ```
 // 启动 
-docker compose -f docker/docker-compose.admin.yml up -d --build
+docker compose -f docker/docker-compose.yml up -d --build
 
 // 停止
-docker compose -f docker/docker-compose.admin.yml down
+docker compose -f docker/docker-compose.yml down
 ```
 
 ### 5.25 优雅停机   
@@ -3023,11 +3023,11 @@ public void execute() {
     // 构建 XXL-JOB
     mvn clean package -Dmaven.test.skip=true
     // 配置数据库连接（数据库需单独部署并初始化）
-    cat docker/docker-compose.admin.yml
+    cat docker/docker-compose.yml
     // 启动 XXL-JOB
-    docker compose -f docker/docker-compose.admin.yml up -d --build
+    docker compose -f docker/docker-compose.yml up -d --build
     // 停止 XXL-JOB
-    docker compose -f docker/docker-compose.admin.yml down
+    docker compose -f docker/docker-compose.yml down
     ```
 </details>
 

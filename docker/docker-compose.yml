@@ -12,9 +12,9 @@ services:
       LOG_HOME: /data/applogs
       # PostgreSQL is provided separately; these values match the current deployment.
       PARAMS: >-
-        --spring.datasource.url=jdbc:postgresql://host.docker.internal:2956/xxl_job
-        --spring.datasource.username=postgres
-        --spring.datasource.password=postgres_pwd
+        --spring.datasource.url=jdbc:postgresql://172.31.22.182:5432/postgres?currentSchema=xxl_job
+        --spring.datasource.username=postgres.your-tenant-id
+        --spring.datasource.password=replace_with_your_postgresql_password
         --spring.datasource.driver-class-name=org.postgresql.Driver
         --server.port=8080
         --server.servlet.context-path=/

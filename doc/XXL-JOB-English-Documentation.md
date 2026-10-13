@@ -1686,11 +1686,11 @@ Tips: V1.3.x release has been published , enter the maintenance phase, branch  a
     mvn clean package -Dmaven.test.skip=true
     // Configure PARAMS with a PostgreSQL address reachable from the container;
     // deploy and initialize the database separately.
-    cat docker/docker-compose.admin.yml
+    cat docker/docker-compose.yml
     // Start XXL-JOB admin
-    docker compose -f docker/docker-compose.admin.yml up -d --build
+    docker compose -f docker/docker-compose.yml up -d --build
     // Stop XXL-JOB
-    docker compose -f docker/docker-compose.admin.yml down
+    docker compose -f docker/docker-compose.yml down
     ```
 </details>
 
